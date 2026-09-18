@@ -3,19 +3,17 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Битва существ</title>
+    <title>Creature Battle</title>
     <style>
         body { font-family: Arial, sans-serif; background: #222; color: #fff; text-align: center; padding: 20px; }
         .screen { display: none; max-width: 700px; margin: 0 auto; background: #333; padding: 20px; border-radius: 10px; box-shadow: 0 0 10px rgba(0,0,0,0.5); }
         .active { display: block; }
-        
-        /* Кнопка боя и контейнер для всплывающего окна */
+
         .battle-btn-container { position: relative; display: inline-block; margin: 20px 0; }
         button { background: #ff9800; border: none; padding: 10px 20px; color: white; font-size: 16px; border-radius: 5px; cursor: pointer; margin: 5px; }
         button:hover { background: #e68a00; }
         button:disabled { background: #555; cursor: not-allowed; }
-        
-        /* Стили окна предпросмотра врагов (Тултип) */
+
         .preview-tooltip { 
             display: none; position: absolute; bottom: 110%; left: 50%; transform: translateX(-50%);
             background: #1a1a1a; border: 2px solid #ff5722; padding: 15px; border-radius: 8px;
@@ -24,15 +22,13 @@
         .battle-btn-container:hover .preview-tooltip { display: block; }
         .preview-enemy-item { display: flex; align-items: center; justify-content: space-between; margin-bottom: 5px; font-size: 14px; border-bottom: 1px dashed #444; padding-bottom: 3px; }
 
-        /* Сетки и карточки */
         .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 10px; margin: 20px 0; }
         .card { background: #444; padding: 10px; border-radius: 5px; border: 1px solid #555; position: relative; cursor: pointer; user-select: none; }
         .card:hover { border-color: #ff9800; }
         .albino { border: 2px solid #fff; background: #666; text-shadow: 0 0 5px #fff; }
         .equipped { border: 2px solid #4caf50 !important; background: #2e5430; }
         .badge { position: absolute; top: -5px; right: -5px; background: #ff5722; color: white; border-radius: 50%; padding: 2px 7px; font-size: 12px; font-weight: bold; }
-        
-        /* Боевой лог и интерфейс */
+
         .hp-bar { background: #555; height: 10px; border-radius: 3px; margin-top: 5px; overflow: hidden; }
         .hp-fill { background: #4caf50; height: 100%; width: 100%; transition: width 0.3s; }
         #log { background: #111; padding: 10px; height: 150px; overflow-y: auto; text-align: left; font-family: monospace; font-size: 12px; margin-top: 15px; border-radius: 5px; }
@@ -42,104 +38,95 @@
 </head>
 <body>
 
-    <h1>Битва Существ</h1>
+    <h1>Creature Battle</h1>
 
-    <!-- 1. ЭКРАН ВЫБОРА СТАРТОВОГО ПЕРСОНАЖА -->
     <div id="start-screen" class="screen active">
-        <h2>Выберите своего первого спутника:</h2>
+        <h2>Choose you'r first creature:</h2>
         <div id="start-options" class="grid"></div>
     </div>
 
-    <!-- 2. ГЛАВНОЕ МЕНЮ И ИНВЕНТАРЬ -->
     <div id="menu-screen" class="screen">
-        <h2 id="wave-title">Волна 1</h2>
-        
-        <!-- Контейнер кнопки боя со всплывающим окном -->
+        <h2 id="wave-title">Wave 1</h2>
+
         <div class="battle-btn-container">
             <div id="enemy-preview-box" class="preview-tooltip">
-                <b style="color: #ff5722; display:block; margin-bottom: 8px;">Враги на этой волне:</b>
+                <b style="color: #ff5722; display:block; margin-bottom: 8px;">Enemyes on wave:</b>
                 <div id="enemy-preview-list"></div>
             </div>
-            <button id="start-battle-btn" onclick="startBattle()" style="font-size: 20px; padding: 15px 40px; margin: 0;">В бой!</button>
+            <button id="start-battle-btn" onclick="startBattle()" style="font-size: 20px; padding: 15px 40px; margin: 0;">Fight!</button>
         </div>
         
-        <div class="section-title">Боевой отряд (<span id="team-count">0</span> / 10)</div>
-        <p class="hint">Эти существа пойдут на арену. Нажмите на карточку, чтобы убрать существо из отряда.</p>
+        <div class="section-title">Battle Command (<span id="team-count">0</span> / 10)</div>
+        <p class="hint">These creatures will head to the arena. Tap a card to remove the creature from the squad.</p>
         <div id="active-team-list" class="grid"></div>
 
-        <div class="section-title">Ваш инвентарь (Склад)</div>
-        <p class="hint">👉 <b>ЛКМ</b> — добавить в команду | 🟥 <b>Shift + ЛКМ</b> — убрать из команды</p>
+        <div class="section-title">You'r inventory</div>
+        <p class="hint">👉 <b>LMB</b> — add to team | 🟥 <b>Shift + LMB</b> — delete from team</p>
         <div id="inventory-list" class="grid"></div>
     </div>
-    <!-- 3. ЭКРАН БИТВЫ -->
     <div id="battle-screen" class="screen">
-        <h2>Арена</h2>
+        <h2>Arena</h2>
         <div style="display: flex; justify-content: space-between;">
             <div style="width: 45%;">
-                <h3>Вы</h3>
+                <h3>You</h3></h3>
                 <div id="battle-player-team"></div>
             </div>
             <div style="width: 45%;">
-                <h3>Враги</h3>
+                <h3>Enemyes</h3>
                 <div id="battle-enemy-team"></div>
             </div>
         </div>
         <div id="log"></div>
     </div>
 
-    <!-- 4. ЭКРАН НАГРАДЫ -->
     <div id="reward-screen" class="screen">
-        <h2>Победа!</h2>
-        <p>Выберите одного врага, чтобы забрать на склад:</p>
+        <h2>Win!</h2>
+        <p>Choose 1 enemy to get he in team:</p>
         <div id="reward-options" class="grid"></div>
     </div>
 
-    <!-- 5. ЭКРАН ПРОИГРЫША -->
     <div id="gameover-screen" class="screen">
-        <h2 style="color: #ff5722;">Вы проиграли всё!</h2>
-        <p>Ваш боевой отряд полностью уничтожен. Прогресс сброшен.</p>
+        <h2 style="color: #ff5722;">You lose!</h2>
+        <p>Progress restart.</p>
         <button onclick="restartGame()">Начать заново</button>
     </div>
 
 <script>
-// ==========================================
-// НАСТРОЙКА ЖИВОТНЫХ И ВОЛН
-// ==========================================
 const ANIMAL_DB = {
-    dog:  { name: "Собака",  hp: 100, maxHp: 100, dmg: 15, icon: "🐶" },
-    cat:  { name: "Кот",     hp: 80,  maxHp: 80,  dmg: 20, icon: "🐱" },
-    wolf: { name: "Волк",    hp: 120, maxHp: 120, dmg: 22, icon: "🐺" },
-    bear: { name: "Медведь", hp: 200, maxHp: 200, dmg: 24, icon: "🐻" },
-    lion: { name: "Лев",     hp: 160, maxHp: 160, dmg: 28, icon: "🦁" },
-    Frog: { name: "Лягушка", hp: 75,  maxHp: 75,  dmg: 10, icon: "🐸" },
-    Mouse:{ name: "Мышь",    hp: 70,  maxHp: 70,  dmg: 16, icon: "🐭" },
-    Tiger: { name: "Тигр",   hp: 140, maxHp: 140, dmg: 29, icon: "🐯" },
-    Elephant: { name: "Слон", hp: 250, maxHp: 250, dmg: 23, icon: "🐘" },
-    Rabbit: { name: "Кролик", hp: 90, maxHp: 90, dmg: 11, icon: "🐇" },
-    Kangaroo: { name: "Кенгуру", hp: 110, maxHp: 110, dmg: 32, icon: "🦘" },
-    Giraffe: { name: "Жираф", hp: 230, maxHp: 230, dmg: 13, icon: "🦒" },
-    Crocodile: { name: "Крокодил", hp: 165, maxHp: 165, dmg: 34, icon: "🐊" },
-    Horse: { name: "Лошадь", hp: 180, maxHp: 180, dmg: 21, icon: "🐎" },
-    Unicorn: { name: "Единорог", hp: 400, maxHp: 400, dmg: 42, icon: "🦄" },
-    Polar_bear: { name: "Полярный медведь", hp: 235, maxHp: 235, dmg: 26, icon: "🐻‍❄️" },
-    gazelle: { name: "Газель", hp: 140, maxHp: 140, dmg: 12, icon: "🦌" },
-    hyena: { name: "Гиена", hp: 115, maxHp: 115, dmg: 19, icon: "🐅" },
-    Cheetah: { name: "Гепард", hp: 145, maxHp: 145, dmg: 33, icon: "🐆" },
-    rhinoceros: { name: "Носорог", hp: 210, maxHp: 210, dmg: 34, icon: "🦏" },
-    Hippopotamus: { name: "Бегемот", hp: 240, maxHp: 240, dmg: 28, icon: "🦛" },
-    African_elephant: { name: "Африканский слон", hp: 280, maxHp: 280, dmg: 26, icon: "🐘" },
-    Woolly_rhinoceros: { name: "Шерстистый носорог", hp: 265, maxHp: 265, dmg: 38, icon: "🦏" },
-    Mammoth: { name: "Мамонт", hp: 340, maxHp: 340, dmg: 27, icon: "🦣" },
-    Chimpanzee: { name: "Шимпанзе", hp: 90, maxHp: 90, dmg: 16, icon: "🐒" },
-    Orangutan: { name: "Орангутан", hp: 120, maxHp: 120, dmg: 22, icon: "🦧" },
-    Gorilla: { name: "Горилла", hp: 175, maxHp: 175, dmg: 28, icon: "🦍" },
-    Gorilla_A: { name: "Альфа-Горилла", hp: 350, maxHp: 350, dmg: 56, icon: "🦍" },
-    Dodo: { name: "Додо", hp: 110, maxHp: 110, dmg: 12, icon: "🦤" },
-    Brontosaurus: { name: "Диплодок", hp: 450, maxHp: 450, dmg: 18, icon: "🦕" },
-    Rex: { name: "Тираннозавр", hp: 410, maxHp: 410, dmg: 80, icon: "🦖" },
-    Raptor: { name: "Раптор", hp: 130, maxHp: 130, dmg: 23, icon: "🦖" },
-    Giga: { name: "Гиганотозавр", hp: 330, maxHp: 330, dmg: 39, icon: "🦖" },
-    Argentinosavr: { name: "Аргентинозавр (FB)", hp: 2500, maxHp: 2500, dmg: 34, icon: "🦕" }
+    dog:  { name: "Dog",  hp: 100, maxHp: 100, dmg: 15, icon: "🐶" },
+    cat:  { name: "Cat",     hp: 80,  maxHp: 80,  dmg: 20, icon: "🐱" },
+    wolf: { name: "Wolf",    hp: 120, maxHp: 120, dmg: 22, icon: "🐺" },
+    bear: { name: "Bear", hp: 200, maxHp: 200, dmg: 24, icon: "🐻" },
+    lion: { name: "Lion",     hp: 160, maxHp: 160, dmg: 28, icon: "🦁" },
+    Frog: { name: "Frog", hp: 75,  maxHp: 75,  dmg: 10, icon: "🐸" },
+    Mouse:{ name: "Mouse",    hp: 70,  maxHp: 70,  dmg: 16, icon: "🐭" },
+    Tiger: { name: "Tiger",   hp: 140, maxHp: 140, dmg: 29, icon: "🐯" },
+    Elephant: { name: "Elephant", hp: 250, maxHp: 250, dmg: 23, icon: "🐘" },
+    Rabbit: { name: "Rabbit", hp: 90, maxHp: 90, dmg: 11, icon: "🐇" },
+    Kangaroo: { name: "Kangaroo", hp: 110, maxHp: 110, dmg: 32, icon: "🦘" },
+    Giraffe: { name: "Giraffe", hp: 230, maxHp: 230, dmg: 13, icon: "🦒" },
+    Crocodile: { name: "Crocodile", hp: 165, maxHp: 165, dmg: 34, icon: "🐊" },
+    Horse: { name: "Horse", hp: 180, maxHp: 180, dmg: 21, icon: "🐎" },
+    Unicorn: { name: "Unicorn", hp: 400, maxHp: 400, dmg: 42, icon: "🦄" },
+    Polar_bear: { name: "Polar Bear", hp: 235, maxHp: 235, dmg: 26, icon: "🐻‍❄️" },
+    gazelle: { name: "Gazelle", hp: 140, maxHp: 140, dmg: 12, icon: "🦌" },
+    hyena: { name: "Hyena", hp: 115, maxHp: 115, dmg: 19, icon: "🐅" },
+    Cheetah: { name: "Cheetah", hp: 145, maxHp: 145, dmg: 33, icon: "🐆" },
+    rhinoceros: { name: "Rhinoceros", hp: 210, maxHp: 210, dmg: 34, icon: "🦏" },
+    Hippopotamus: { name: "Hippopotamus", hp: 240, maxHp: 240, dmg: 28, icon: "🦛" },
+    African_elephant: { name: "African elephant", hp: 280, maxHp: 280, dmg: 26, icon: "🐘" },
+    Woolly_rhinoceros: { name: "Woolly rhinoceros", hp: 265, maxHp: 265, dmg: 38, icon: "🦏" },
+    Mammoth: { name: "Mammoth", hp: 340, maxHp: 340, dmg: 27, icon: "🦣" },
+    Chimpanzee: { name: "Chimpanzee", hp: 90, maxHp: 90, dmg: 16, icon: "🐒" },
+    Orangutan: { name: "Orangutan", hp: 120, maxHp: 120, dmg: 22, icon: "🦧" },
+    Gorilla: { name: "Gorilla", hp: 175, maxHp: 175, dmg: 28, icon: "🦍" },
+    Gorilla_A: { name: "Alpha-Gorilla", hp: 350, maxHp: 350, dmg: 56, icon: "🦍" },
+    Dodo: { name: "Dodo", hp: 110, maxHp: 110, dmg: 12, icon: "🦤" },
+    Brontosaurus: { name: "Brontosaurus", hp: 450, maxHp: 450, dmg: 18, icon: "🦕" },
+    Rex: { name: "Tyrannosaurus", hp: 410, maxHp: 410, dmg: 80, icon: "🦖" },
+    Raptor: { name: "Velociraptor", hp: 130, maxHp: 130, dmg: 23, icon: "🦖" },
+    Giga: { name: "Giganotosaururs", hp: 330, maxHp: 330, dmg: 39, icon: "🦖" },
+    Argentinosavr: { name: "Argentinosaurus (FB)", hp: 2500, maxHp: 2500, dmg: 34, icon: "🦕" }
 };
 
 const STARTING_CHOICES = ["dog", "cat"];
@@ -187,9 +174,6 @@ const ENEMY_WAVES = [
     ["Argentinosavr"]
 ];
 
-// ==========================================
-// СИСТЕМНЫЙ КОД ИГРЫ
-// ==========================================
 let inventory = [];     
 let playerTeam = [];    
 let enemyTeam = [];     
@@ -208,7 +192,7 @@ function initGame() {
     startOptions.innerHTML = "";
     
     STARTING_CHOICES.forEach(key => {
-        let animal = createAnimal(key, false); // На старте без шанса альбиноса для честности
+        let animal = createAnimal(key, false);
         let btn = document.createElement("button");
         btn.className = "card";
         btn.innerHTML = `${animal.icon} <b>${animal.name}</b><br>ХП: ${animal.hp}<br>Урон: ${animal.dmg}`;
@@ -223,12 +207,12 @@ function initGame() {
 
 function createAnimal(key, allowAlbino = true) {
     const base = ANIMAL_DB[key];
-    if (!base) return { id: nextId++, type: key, name: "Неизвестно", hp: 50, maxHp: 50, dmg: 5, icon: "❓", isAlbino: false };
+    if (!base) return { id: nextId++, type: key, name: "Unknown", hp: 50, maxHp: 50, dmg: 5, icon: "❓", isAlbino: false };
     
     let isAlbino = allowAlbino ? (Math.random() < 0.10) : false; 
     let hp = isAlbino ? Math.round(base.hp * 0.9) : base.hp;
     let dmg = isAlbino ? Math.round(base.dmg * 1.2) : base.dmg;
-    let name = isAlbino ? `Альбинос ${base.name}` : base.name;
+    let name = isAlbino ? `Albino ${base.name}` : base.name;
 
     return {
         id: nextId++,
@@ -257,7 +241,7 @@ function toggleEquip(petId) {
         playerTeam.splice(teamIndex, 1);
     } else {
         if (playerTeam.length >= 10) {
-            alert("В боевом отряде не может быть больше 10 существ!");
+            alert("No more than 10 creatures in team!");
             return;
         }
         playerTeam.push(pet);
@@ -276,18 +260,16 @@ function openMenu() {
     
     renderActiveTeam();
     renderInventory();
-    generateEnemyPreview(); // Обновляем список врагов для тултипа
+    generateEnemyPreview();
 
     document.getElementById("start-battle-btn").disabled = playerTeam.length === 0;
 }
 
-// Новое: Генерация списка врагов для показа при наведении
 function generateEnemyPreview() {
     const previewList = document.getElementById("enemy-preview-list");
     previewList.innerHTML = "";
     
     let waveData = ENEMY_WAVES[currentWave];
-    // Если прописанные волны кончились, показываем шаблон того, что сгенерирует система
     if (!waveData) {
         let count = Math.min(2 + Math.floor(currentWave / 2), 10);
         previewList.innerHTML = `<div class='hint' style='color:#ff9800'>Случайная волна хаоса!<br>Ожидается существ: ${count} шт.</div>`;
@@ -365,7 +347,7 @@ function renderInventory() {
                 if (unequippedPet) {
                     toggleEquip(unequippedPet.id);
                 } else {
-                    alert("Все существа этого типа из инвентаря уже в отряде!");
+                    alert("All this type creatures already equiped!");
                 }
             }
         };
@@ -376,7 +358,7 @@ function renderInventory() {
 function startBattle() {
     showScreen("battle-screen");
     const logDiv = document.getElementById("log");
-    logDiv.innerHTML = "<b>Битва началась!</b><br>";
+    logDiv.innerHTML = "<b>Battle Start!</b><br>";
 
     let waveData = ENEMY_WAVES[currentWave];
     if (!waveData) {
@@ -386,7 +368,7 @@ function startBattle() {
         });
     }
 
-    enemyTeam = waveData.map(key => createAnimal(key, true)); // У врагов тоже есть 10% шанс стать Альбиносом
+    enemyTeam = waveData.map(key => createAnimal(key, true));
     updateBattleVisuals();
     battleInterval = setInterval(battleTick, 800);
 }
@@ -477,7 +459,7 @@ function showRewardScreen() {
     });
 
     let skipBtn = document.createElement("button");
-    skipBtn.innerText = "Пропустить награду";
+    skipBtn.innerText = "Skip Reward";
     skipBtn.onclick = () => openMenu();
     optionsDiv.appendChild(skipBtn);
 }
