@@ -1,0 +1,492 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Битва существ</title>
+    <style>
+        body { font-family: Arial, sans-serif; background: #222; color: #fff; text-align: center; padding: 20px; }
+        .screen { display: none; max-width: 700px; margin: 0 auto; background: #333; padding: 20px; border-radius: 10px; box-shadow: 0 0 10px rgba(0,0,0,0.5); }
+        .active { display: block; }
+        
+        /* Кнопка боя и контейнер для всплывающего окна */
+        .battle-btn-container { position: relative; display: inline-block; margin: 20px 0; }
+        button { background: #ff9800; border: none; padding: 10px 20px; color: white; font-size: 16px; border-radius: 5px; cursor: pointer; margin: 5px; }
+        button:hover { background: #e68a00; }
+        button:disabled { background: #555; cursor: not-allowed; }
+        
+        /* Стили окна предпросмотра врагов (Тултип) */
+        .preview-tooltip { 
+            display: none; position: absolute; bottom: 110%; left: 50%; transform: translateX(-50%);
+            background: #1a1a1a; border: 2px solid #ff5722; padding: 15px; border-radius: 8px;
+            width: 280px; box-shadow: 0 5px 15px rgba(0,0,0,0.8); z-index: 100; text-align: left;
+        }
+        .battle-btn-container:hover .preview-tooltip { display: block; }
+        .preview-enemy-item { display: flex; align-items: center; justify-content: space-between; margin-bottom: 5px; font-size: 14px; border-bottom: 1px dashed #444; padding-bottom: 3px; }
+
+        /* Сетки и карточки */
+        .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 10px; margin: 20px 0; }
+        .card { background: #444; padding: 10px; border-radius: 5px; border: 1px solid #555; position: relative; cursor: pointer; user-select: none; }
+        .card:hover { border-color: #ff9800; }
+        .albino { border: 2px solid #fff; background: #666; text-shadow: 0 0 5px #fff; }
+        .equipped { border: 2px solid #4caf50 !important; background: #2e5430; }
+        .badge { position: absolute; top: -5px; right: -5px; background: #ff5722; color: white; border-radius: 50%; padding: 2px 7px; font-size: 12px; font-weight: bold; }
+        
+        /* Боевой лог и интерфейс */
+        .hp-bar { background: #555; height: 10px; border-radius: 3px; margin-top: 5px; overflow: hidden; }
+        .hp-fill { background: #4caf50; height: 100%; width: 100%; transition: width 0.3s; }
+        #log { background: #111; padding: 10px; height: 150px; overflow-y: auto; text-align: left; font-family: monospace; font-size: 12px; margin-top: 15px; border-radius: 5px; }
+        .section-title { text-align: left; border-bottom: 1px solid #555; padding-bottom: 5px; margin-top: 20px; color: #ff9800; font-weight: bold; }
+        .hint { font-size: 12px; color: #aaa; text-align: left; margin: 5px 0; }
+    </style>
+</head>
+<body>
+
+    <h1>Битва Существ</h1>
+
+    <!-- 1. ЭКРАН ВЫБОРА СТАРТОВОГО ПЕРСОНАЖА -->
+    <div id="start-screen" class="screen active">
+        <h2>Выберите своего первого спутника:</h2>
+        <div id="start-options" class="grid"></div>
+    </div>
+
+    <!-- 2. ГЛАВНОЕ МЕНЮ И ИНВЕНТАРЬ -->
+    <div id="menu-screen" class="screen">
+        <h2 id="wave-title">Волна 1</h2>
+        
+        <!-- Контейнер кнопки боя со всплывающим окном -->
+        <div class="battle-btn-container">
+            <div id="enemy-preview-box" class="preview-tooltip">
+                <b style="color: #ff5722; display:block; margin-bottom: 8px;">Враги на этой волне:</b>
+                <div id="enemy-preview-list"></div>
+            </div>
+            <button id="start-battle-btn" onclick="startBattle()" style="font-size: 20px; padding: 15px 40px; margin: 0;">В бой!</button>
+        </div>
+        
+        <div class="section-title">Боевой отряд (<span id="team-count">0</span> / 10)</div>
+        <p class="hint">Эти существа пойдут на арену. Нажмите на карточку, чтобы убрать существо из отряда.</p>
+        <div id="active-team-list" class="grid"></div>
+
+        <div class="section-title">Ваш инвентарь (Склад)</div>
+        <p class="hint">👉 <b>ЛКМ</b> — добавить в команду | 🟥 <b>Shift + ЛКМ</b> — убрать из команды</p>
+        <div id="inventory-list" class="grid"></div>
+    </div>
+    <!-- 3. ЭКРАН БИТВЫ -->
+    <div id="battle-screen" class="screen">
+        <h2>Арена</h2>
+        <div style="display: flex; justify-content: space-between;">
+            <div style="width: 45%;">
+                <h3>Вы</h3>
+                <div id="battle-player-team"></div>
+            </div>
+            <div style="width: 45%;">
+                <h3>Враги</h3>
+                <div id="battle-enemy-team"></div>
+            </div>
+        </div>
+        <div id="log"></div>
+    </div>
+
+    <!-- 4. ЭКРАН НАГРАДЫ -->
+    <div id="reward-screen" class="screen">
+        <h2>Победа!</h2>
+        <p>Выберите одного врага, чтобы забрать на склад:</p>
+        <div id="reward-options" class="grid"></div>
+    </div>
+
+    <!-- 5. ЭКРАН ПРОИГРЫША -->
+    <div id="gameover-screen" class="screen">
+        <h2 style="color: #ff5722;">Вы проиграли всё!</h2>
+        <p>Ваш боевой отряд полностью уничтожен. Прогресс сброшен.</p>
+        <button onclick="restartGame()">Начать заново</button>
+    </div>
+
+<script>
+// ==========================================
+// НАСТРОЙКА ЖИВОТНЫХ И ВОЛН
+// ==========================================
+const ANIMAL_DB = {
+    dog:  { name: "Собака",  hp: 100, maxHp: 100, dmg: 15, icon: "🐶" },
+    cat:  { name: "Кот",     hp: 80,  maxHp: 80,  dmg: 20, icon: "🐱" },
+    wolf: { name: "Волк",    hp: 120, maxHp: 120, dmg: 22, icon: "🐺" },
+    bear: { name: "Медведь", hp: 200, maxHp: 200, dmg: 24, icon: "🐻" },
+    lion: { name: "Лев",     hp: 160, maxHp: 160, dmg: 28, icon: "🦁" },
+    Frog: { name: "Лягушка", hp: 75,  maxHp: 75,  dmg: 10, icon: "🐸" },
+    Mouse:{ name: "Мышь",    hp: 70,  maxHp: 70,  dmg: 16, icon: "🐭" },
+    Tiger: { name: "Тигр",   hp: 140, maxHp: 140, dmg: 29, icon: "🐯" },
+    Elephant: { name: "Слон", hp: 250, maxHp: 250, dmg: 23, icon: "🐘" },
+    Rabbit: { name: "Кролик", hp: 90, maxHp: 90, dmg: 11, icon: "🐇" },
+    Kangaroo: { name: "Кенгуру", hp: 110, maxHp: 110, dmg: 32, icon: "🦘" },
+    Giraffe: { name: "Жираф", hp: 230, maxHp: 230, dmg: 13, icon: "🦒" },
+    Crocodile: { name: "Крокодил", hp: 165, maxHp: 165, dmg: 34, icon: "🐊" },
+    Horse: { name: "Лошадь", hp: 180, maxHp: 180, dmg: 21, icon: "🐎" },
+    Unicorn: { name: "Единорог", hp: 400, maxHp: 400, dmg: 42, icon: "🦄" },
+    Polar_bear: { name: "Полярный медведь", hp: 235, maxHp: 235, dmg: 26, icon: "🐻‍❄️" },
+    gazelle: { name: "Газель", hp: 140, maxHp: 140, dmg: 12, icon: "🦌" },
+    hyena: { name: "Гиена", hp: 115, maxHp: 115, dmg: 19, icon: "🐅" },
+    Cheetah: { name: "Гепард", hp: 145, maxHp: 145, dmg: 33, icon: "🐆" },
+    rhinoceros: { name: "Носорог", hp: 210, maxHp: 210, dmg: 34, icon: "🦏" },
+    Hippopotamus: { name: "Бегемот", hp: 240, maxHp: 240, dmg: 28, icon: "🦛" },
+    African_elephant: { name: "Африканский слон", hp: 280, maxHp: 280, dmg: 26, icon: "🐘" },
+    Woolly_rhinoceros: { name: "Шерстистый носорог", hp: 265, maxHp: 265, dmg: 38, icon: "🦏" },
+    Mammoth: { name: "Мамонт", hp: 340, maxHp: 340, dmg: 27, icon: "🦣" },
+    Chimpanzee: { name: "Шимпанзе", hp: 90, maxHp: 90, dmg: 16, icon: "🐒" },
+    Orangutan: { name: "Орангутан", hp: 120, maxHp: 120, dmg: 22, icon: "🦧" },
+    Gorilla: { name: "Горилла", hp: 175, maxHp: 175, dmg: 28, icon: "🦍" },
+    Gorilla_A: { name: "Альфа-Горилла", hp: 350, maxHp: 350, dmg: 56, icon: "🦍" },
+    Dodo: { name: "Додо", hp: 110, maxHp: 110, dmg: 12, icon: "🦤" },
+    Brontosaurus: { name: "Диплодок", hp: 450, maxHp: 450, dmg: 18, icon: "🦕" },
+    Rex: { name: "Тираннозавр", hp: 410, maxHp: 410, dmg: 80, icon: "🦖" },
+    Raptor: { name: "Раптор", hp: 130, maxHp: 130, dmg: 23, icon: "🦖" },
+    Giga: { name: "Гиганотозавр", hp: 330, maxHp: 330, dmg: 39, icon: "🦖" },
+    Argentinosavr: { name: "Аргентинозавр (FB)", hp: 2500, maxHp: 2500, dmg: 34, icon: "🦕" }
+};
+
+const STARTING_CHOICES = ["dog", "cat"];
+
+const ENEMY_WAVES = [
+    ["Frog"],                 
+    ["Mouse"],          
+    ["dog"],                
+    ["Frog", "Mouse"],  
+    ["cat"],                
+    ["Mouse", "Mouse", "wolf"],                
+    ["Tiger"],                
+    ["wolf", "wolf"],                
+    ["bear"],                
+    ["Elephant"],                
+    ["Tiger", "lion"],                
+    ["Rabbit", "Rabbit", "Rabbit", "Rabbit"],                
+    ["Crocodile", "Frog", "Frog", "Frog"],                
+    ["Elephant", "Giraffe", "Kangaroo"],                
+    ["Elephant", "Giraffe", "Giraffe", "Kangaroo"],                
+    ["Horse", "Horse", "Horse"],                
+    ["Horse", "Horse", "Unicorn"],                
+    ["Rabbit", "Rabbit", "Rabbit", "Rabbit", "Polar_bear"],                
+    ["gazelle", "gazelle", "gazelle"],                
+    ["gazelle", "gazelle", "hyena"],                
+    ["hyena", "hyena", "hyena"],                
+    ["Hippopotamus", "rhinoceros"],                
+    ["Hippopotamus", "rhinoceros", "rhinoceros"],                
+    ["African_elephant", "Giraffe", "Elephant", "Kangaroo"],                
+    ["Woolly_rhinoceros"],                
+    ["Mammoth"],                
+    ["Chimpanzee", "Chimpanzee", "Chimpanzee", "Chimpanzee", "Chimpanzee"],                
+    ["Orangutan", "Orangutan", "Chimpanzee", "Chimpanzee"],                
+    ["Gorilla", "Gorilla", "Gorilla"],                
+    ["Gorilla_A", "Gorilla", "Gorilla"],                
+    ["Elephant", "bear", "lion", "lion", "Crocodile", "African_elephant"],                
+    ["African_elephant", "African_elephant", "African_elephant"],                
+    ["Dodo", "Dodo", "Dodo"],                
+    ["Dodo", "Dodo", "Dodo", "Dodo", "Dodo"],                
+    ["Brontosaurus", "Dodo", "Dodo", "Dodo"],                
+    ["Rex", "Raptor", "Raptor"],                
+    ["Raptor", "Raptor", "Raptor", "Raptor", "Raptor"],                
+    ["Giga", "Giga", "Brontosaurus"],                
+    ["Giga", "Giga", "Giga"],                
+    ["Argentinosavr"]
+];
+
+// ==========================================
+// СИСТЕМНЫЙ КОД ИГРЫ
+// ==========================================
+let inventory = [];     
+let playerTeam = [];    
+let enemyTeam = [];     
+let currentWave = 0;
+let battleInterval;
+let nextId = 1;
+
+function initGame() {
+    inventory = [];
+    playerTeam = [];
+    currentWave = 0;
+    nextId = 1;
+    showScreen("start-screen");
+    
+    const startOptions = document.getElementById("start-options");
+    startOptions.innerHTML = "";
+    
+    STARTING_CHOICES.forEach(key => {
+        let animal = createAnimal(key, false); // На старте без шанса альбиноса для честности
+        let btn = document.createElement("button");
+        btn.className = "card";
+        btn.innerHTML = `${animal.icon} <b>${animal.name}</b><br>ХП: ${animal.hp}<br>Урон: ${animal.dmg}`;
+        btn.onclick = () => {
+            addPetToInventory(animal);
+            toggleEquip(animal.id); 
+            openMenu();
+        };
+        startOptions.appendChild(btn);
+    });
+}
+
+function createAnimal(key, allowAlbino = true) {
+    const base = ANIMAL_DB[key];
+    if (!base) return { id: nextId++, type: key, name: "Неизвестно", hp: 50, maxHp: 50, dmg: 5, icon: "❓", isAlbino: false };
+    
+    let isAlbino = allowAlbino ? (Math.random() < 0.10) : false; 
+    let hp = isAlbino ? Math.round(base.hp * 0.9) : base.hp;
+    let dmg = isAlbino ? Math.round(base.dmg * 1.2) : base.dmg;
+    let name = isAlbino ? `Альбинос ${base.name}` : base.name;
+
+    return {
+        id: nextId++,
+        type: key,
+        name: name,
+        hp: hp,
+        maxHp: hp,
+        dmg: dmg,
+        icon: base.icon,
+        isAlbino: isAlbino
+    };
+}
+
+function addPetToInventory(pet) {
+    pet.hp = pet.maxHp; 
+    inventory.push(pet);
+}
+
+function toggleEquip(petId) {
+    const pet = inventory.find(p => p.id === petId);
+    if (!pet) return;
+
+    const teamIndex = playerTeam.findIndex(p => p.id === petId);
+    
+    if (teamIndex > -1) {
+        playerTeam.splice(teamIndex, 1);
+    } else {
+        if (playerTeam.length >= 10) {
+            alert("В боевом отряде не может быть больше 10 существ!");
+            return;
+        }
+        playerTeam.push(pet);
+    }
+    openMenu();
+}
+
+function showScreen(screenId) {
+    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+    document.getElementById(screenId).classList.add('active');
+}
+function openMenu() {
+    showScreen("menu-screen");
+    document.getElementById("wave-title").innerText = `Волна ${currentWave + 1}`;
+    document.getElementById("team-count").innerText = playerTeam.length;
+    
+    renderActiveTeam();
+    renderInventory();
+    generateEnemyPreview(); // Обновляем список врагов для тултипа
+
+    document.getElementById("start-battle-btn").disabled = playerTeam.length === 0;
+}
+
+// Новое: Генерация списка врагов для показа при наведении
+function generateEnemyPreview() {
+    const previewList = document.getElementById("enemy-preview-list");
+    previewList.innerHTML = "";
+    
+    let waveData = ENEMY_WAVES[currentWave];
+    // Если прописанные волны кончились, показываем шаблон того, что сгенерирует система
+    if (!waveData) {
+        let count = Math.min(2 + Math.floor(currentWave / 2), 10);
+        previewList.innerHTML = `<div class='hint' style='color:#ff9800'>Случайная волна хаоса!<br>Ожидается существ: ${count} шт.</div>`;
+        return;
+    }
+
+    waveData.forEach(key => {
+        const base = ANIMAL_DB[key];
+        if (base) {
+            let item = document.createElement("div");
+            item.className = "preview-enemy-item";
+            item.innerHTML = `
+                <span>${base.icon} <b>${base.name}</b></span>
+                <span style="color:#aaa;">❤️${base.hp} ⚔️${base.dmg}</span>
+            `;
+            previewList.appendChild(item);
+        }
+    });
+}
+
+function renderActiveTeam() {
+    const activeList = document.getElementById("active-team-list");
+    activeList.innerHTML = "";
+    
+    if (playerTeam.length === 0) {
+        activeList.innerHTML = "<p style='color:#aaa; grid-column: 1/-1;'>Отряд пуст. Экипируйте кого-нибудь из инвентаря ниже!</p>";
+        return;
+    }
+
+    playerTeam.forEach(pet => {
+        let card = document.createElement("div");
+        card.className = `card equipped ${pet.isAlbino ? 'albino' : ''}`;
+        card.innerHTML = `${pet.icon} <b>${pet.name}</b><br>⚔️ ${pet.dmg}<br>❤️ ${pet.hp}/${pet.maxHp}`;
+        card.onclick = () => toggleEquip(pet.id);
+        activeList.appendChild(card);
+    });
+}
+
+function renderInventory() {
+    const invList = document.getElementById("inventory-list");
+    invList.innerHTML = "";
+
+    const groups = {};
+    inventory.forEach(pet => {
+        const key = `${pet.type}_${pet.isAlbino}`;
+        if (!groups[key]) {
+            groups[key] = { sample: pet, items: [] };
+        }
+        groups[key].items.push(pet);
+    });
+
+    Object.keys(groups).forEach(key => {
+        const group = groups[key];
+        const sample = group.sample;
+        const count = group.items.length;
+
+        const equippedInGroup = group.items.filter(pet => playerTeam.some(t => t.id === pet.id));
+        const equippedCount = equippedInGroup.length;
+
+        let card = document.createElement("div");
+        card.className = `card ${sample.isAlbino ? 'albino' : ''} ${equippedCount > 0 ? 'equipped' : ''}`;
+        card.innerHTML = `
+            ${sample.icon} <b>${sample.name}</b><br>
+            ⚔️ ${sample.dmg}<br>❤️ ${sample.maxHp}
+            <div class="badge">${equippedCount} / ${count}</div>
+        `;
+
+        card.onclick = (event) => {
+            if (event.shiftKey) {
+                if (equippedCount > 0) {
+                    toggleEquip(equippedInGroup[0].id);
+                }
+            } else {
+                const unequippedPet = group.items.find(pet => !playerTeam.some(t => t.id === pet.id));
+                if (unequippedPet) {
+                    toggleEquip(unequippedPet.id);
+                } else {
+                    alert("Все существа этого типа из инвентаря уже в отряде!");
+                }
+            }
+        };
+        invList.appendChild(card);
+    });
+}
+
+function startBattle() {
+    showScreen("battle-screen");
+    const logDiv = document.getElementById("log");
+    logDiv.innerHTML = "<b>Битва началась!</b><br>";
+
+    let waveData = ENEMY_WAVES[currentWave];
+    if (!waveData) {
+        waveData = Array(Math.min(2 + Math.floor(currentWave/2), 10)).fill(null).map(() => {
+            const keys = Object.keys(ANIMAL_DB);
+            return keys[Math.floor(Math.random() * keys.length)];
+        });
+    }
+
+    enemyTeam = waveData.map(key => createAnimal(key, true)); // У врагов тоже есть 10% шанс стать Альбиносом
+    updateBattleVisuals();
+    battleInterval = setInterval(battleTick, 800);
+}
+
+function updateBattleVisuals() {
+    renderBattleTeam("battle-player-team", playerTeam);
+    renderBattleTeam("battle-enemy-team", enemyTeam);
+}
+
+function renderBattleTeam(elementId, team) {
+    const container = document.getElementById(elementId);
+    container.innerHTML = "";
+    team.forEach(pet => {
+        let pct = (pet.hp / pet.maxHp) * 100;
+        if (pct < 0) pct = 0;
+        let card = document.createElement("div");
+        card.className = `card ${pet.isAlbino ? 'albino' : ''}`;
+        card.style.opacity = pet.hp <= 0 ? "0.4" : "1";
+        card.innerHTML = `
+            ${pet.icon} <b>${pet.name}</b> [${pet.dmg}]<br>
+            ${pet.hp}/${pet.maxHp}
+            <div class="hp-bar"><div class="hp-fill" style="width: ${pct}%"></div></div>
+        `;
+        container.appendChild(card);
+    });
+}
+
+function battleTick() {
+    let alivePlayers = playerTeam.filter(p => p.hp > 0);
+    let aliveEnemies = enemyTeam.filter(e => e.hp > 0);
+
+    if (alivePlayers.length === 0 || aliveEnemies.length === 0) {
+        clearInterval(battleInterval);
+        endBattle(alivePlayers.length > 0);
+        return;
+    }
+
+    let attacker = alivePlayers[Math.floor(Math.random() * alivePlayers.length)];
+    let target = aliveEnemies[Math.floor(Math.random() * aliveEnemies.length)];
+    target.hp -= attacker.dmg;
+    logMessage(`${attacker.icon} ${attacker.name} наносит ${attacker.dmg} урона ${target.icon} ${target.name}`);
+
+    aliveEnemies = enemyTeam.filter(e => e.hp > 0);
+    if (aliveEnemies.length > 0) {
+        let enemyAttacker = aliveEnemies[Math.floor(Math.random() * aliveEnemies.length)];
+        let playerTarget = alivePlayers[Math.floor(Math.random() * alivePlayers.length)];
+        playerTarget.hp -= enemyAttacker.dmg;
+        logMessage(`<span style="color:#ff8888">${enemyAttacker.icon} ${enemyAttacker.name} бьет ${playerTarget.icon} ${playerTarget.name} на ${enemyAttacker.dmg}</span>`);
+    }
+
+    updateBattleVisuals();
+}
+
+function logMessage(msg) {
+    const logDiv = document.getElementById("log");
+    logDiv.innerHTML += msg + "<br>";
+    logDiv.scrollTop = logDiv.scrollHeight;
+}
+
+function endBattle(isPlayerWon) {
+    if (isPlayerWon) {
+        currentWave++;
+        const deadIds = playerTeam.filter(p => p.hp <= 0).map(p => p.id);
+        inventory = inventory.filter(p => !deadIds.includes(p.id));
+        playerTeam = playerTeam.filter(p => !deadIds.includes(p.id));
+        playerTeam.forEach(p => p.hp = p.maxHp);
+        showRewardScreen();
+    } else {
+        showScreen("gameover-screen");
+    }
+}
+
+function showRewardScreen() {
+    showScreen("reward-screen");
+    const optionsDiv = document.getElementById("reward-options");
+    optionsDiv.innerHTML = "";
+
+    enemyTeam.forEach((enemy) => {
+        let btn = document.createElement("button");
+        btn.className = `card ${enemy.isAlbino ? 'albino' : ''}`;
+        btn.innerHTML = `Забрать:<br>${enemy.icon} <b>${enemy.name}</b><br>⚔️ ${enemy.dmg}<br>❤️ ${enemy.maxHp}`;
+        
+        btn.onclick = () => {
+            addPetToInventory(enemy);
+            openMenu();
+        };
+        optionsDiv.appendChild(btn);
+    });
+
+    let skipBtn = document.createElement("button");
+    skipBtn.innerText = "Пропустить награду";
+    skipBtn.onclick = () => openMenu();
+    optionsDiv.appendChild(skipBtn);
+}
+
+function restartGame() {
+    initGame();
+}
+
+initGame();
+</script>
+</body>
+</html>
