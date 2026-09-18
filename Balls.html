@@ -32,52 +32,49 @@
 </div>
 
 <div id="ui-panel">
-    <!-- 1. РЕДАКТОР И СОХРАНЕНИЕ -->
     <div class="section">
-        <h3>1. Конструктор Шаров</h3>
+        <h3>1. Ball Creator</h3>
         <div class="control-group">
-            <label>Название шара:</label>
+            <label>Ball name:</label>
             <input type="text" id="edName" value="Mega Destroyer">
         </div>
         <div class="control-group">
-            <label>Цвет:</label>
+            <label>Color:</label>
             <input type="color" id="edColor" value="#ff0000">
         </div>
         <div class="control-group">
-            <label>Нач. Урон | Прирост (+):</label>
+            <label>Start DMG | Add (+):</label>
             <div style="display:flex; gap:5px;">
                 <input type="number" id="edDmg" value="10" placeholder="Урон">
                 <input type="number" id="edAdd" value="1" placeholder="Прирост">
             </div>
         </div>
         <div class="control-group">
-            <label>Множитель (x) | Ускорение (x):</label>
+            <label>Multiplier (x) | Acceleration (x):</label>
             <div style="display:flex; gap:5px;">
                 <input type="number" id="edMult" value="1.05" step="0.01">
                 <input type="number" id="edSpeedUp" value="1.02" step="0.01">
             </div>
         </div>
-        <button class="btn-save" onclick="saveBall()">СОХРАНИТЬ В СПИСОК</button>
+        <button class="btn-save" onclick="saveBall()">Save</button>
     </div>
 
-    <!-- 2. НАСТРОЙКА БИТВЫ -->
     <div class="section">
-        <h3>2. Выбор для битвы</h3>
+        <h3>2. Battle Choose</h3>
         <div class="battle-setup">
             <div>
-                <label style="color:#ff4d4d">ЛЕВЫЙ:</label>
+                <label style="color:#ff4d4d">Left:</label>
                 <select id="selLeft"></select>
             </div>
             <div>
-                <label style="color:#4d4dff">ПРАВЫЙ:</label>
+                <label style="color:#4d4dff">Right:</label>
                 <select id="selRight"></select>
             </div>
         </div>
     </div>
 
-    <!-- 3. НАСТРОЙКА СТЕН -->
     <div class="section">
-        <h3>3. HP Стен (3 шт на сторону)</h3>
+        <h3>3. Side Health (3 on side)</h3>
         <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;">
             <div>
                 <input type="number" id="hpL1" value="100" style="margin-bottom:2px">
@@ -99,8 +96,8 @@
 const canvas = document.getElementById('arena');
 const ctx = canvas.getContext('2d');
 let savedBalls = JSON.parse(localStorage.getItem('myBalls')) || [
-    {name: "Стандарт", color: "#ffffff", dmg: 10, add: 1, mult: 1.02, speedUp: 1.01},
-    {name: "Тяжелый", color: "#f1c40f", dmg: 50, add: 0, mult: 1.0, speedUp: 1.0}
+    {name: "Standart", color: "#ffffff", dmg: 10, add: 1, mult: 1.02, speedUp: 1.01},
+    {name: "Hard", color: "#f1c40f", dmg: 50, add: 0, mult: 1.0, speedUp: 1.0}
 ];
 
 let walls = [], balls = [], active = false;
@@ -124,15 +121,14 @@ function saveBall() {
     savedBalls.push(ball);
     localStorage.setItem('myBalls', JSON.stringify(savedBalls));
     updateSelects();
-    alert("Шар сохранен!");
+    alert("Ball Saved!");
 }
 
 function startRace() {
     const w = canvas.width = window.innerWidth - 400;
     const h = canvas.height = window.innerHeight;
     document.getElementById('win-msg').style.display = 'none';
-    
-    // Создаем стены
+
     walls = [];
     for(let i=0; i<3; i++) {
         const hL = parseFloat(document.getElementById(`hpL${i+1}`).value);
@@ -141,7 +137,6 @@ function startRace() {
         walls.push({x: w/2+5, y: h*(0.25+i*0.2), w: w/2-5, h: 30, hp: hR, max: hR, side: 1});
     }
 
-    // Запускаем выбранные шары
     const bL = savedBalls[document.getElementById('selLeft').value];
     const bR = savedBalls[document.getElementById('selRight').value];
     
@@ -156,8 +151,7 @@ function animate() {
     if(active) {
         ctx.fillStyle = "rgba(0,0,0,0.3)";
         ctx.fillRect(0,0,canvas.width, canvas.height);
-        
-        // Разделитель
+
         ctx.fillStyle = "#333";
         ctx.fillRect(canvas.width/2-2, 0, 4, canvas.height);
 
