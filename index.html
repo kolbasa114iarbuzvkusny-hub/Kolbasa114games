@@ -4,168 +4,55 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>MS Games</title>
-    <!-- Подключаем красивый гиковский шрифт -->
-    <link rel="preconnect" href="https://googleapis.com">
-    <link rel="preconnect" href="https://gstatic.com" crossorigin>
-    <link href="https://googleapis.com/css2?family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
     <style>
-        :root {
-            --bg-main: #0d1117;
-            --bg-card: #161b22;
-            --bg-btn: #21262d;
-            --border-color: #30363d;
-            --text-main: #c9d1d9;
-            --text-muted: #8b949e;
-            --accent-blue: #58a6ff;
-            --accent-red: #ff7b72;
-            --accent-glow: rgba(88, 166, 255, 0.15);
-        }
-
-        body { 
-            font-family: 'JetBrains Mono', -apple-system, BlinkMacSystemFont, monospace; 
-            background-color: var(--bg-main); 
-            color: var(--text-main); 
-            padding: 40px 20px; 
-            margin: 0; 
-            display: flex;
-            justify-content: center;
-        }
-
-        .container { 
-            width: 100%;
-            max-width: 800px; 
-        }
-
-        header {
-            margin-bottom: 40px;
-            position: relative;
-        }
-
-        h1 { 
-            color: var(--accent-blue); 
-            font-size: 32px; 
-            margin: 0 0 12px 0;
-            display: inline-block;
-            text-shadow: 0 0 20px var(--accent-glow);
-        }
-
-        .desc { 
-            color: var(--text-muted); 
-            font-size: 14px; 
-            line-height: 1.6; 
-            margin: 0;
-            border-left: 3px solid var(--border-color);
-            padding-left: 15px;
-        }
-
-        .game-list { 
-            display: flex;
-            flex-direction: column;
-            gap: 16px;
-        }
-
-        .game-item { 
-            display: flex; 
-            justify-content: space-between; 
-            align-items: center; 
-            padding: 20px; 
-            background: var(--bg-card);
-            border: 1px solid var(--border-color); 
-            border-radius: 12px;
-            transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
-        }
-
-        .game-item:hover { 
-            transform: translateY(-2px);
-            border-color: var(--accent-blue);
-            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3), 0 0 15px var(--accent-glow);
-        }
-
-        .game-info { 
-            display: flex; 
-            flex-direction: column; 
-            gap: 6px;
-        }
-
-        .game-name { 
-            font-weight: 700; 
-            color: var(--accent-red); 
-            font-size: 18px; 
-            letter-spacing: -0.5px;
-        }
-
-        .game-meta { 
-            font-size: 13px; 
-            color: var(--text-muted); 
-        }
-
-        .play-btn { 
-            color: var(--accent-blue); 
-            text-decoration: none; 
-            font-weight: 700; 
-            border: 1px solid var(--border-color); 
-            padding: 10px 20px; 
-            border-radius: 8px; 
-            background: var(--bg-btn); 
-            transition: all 0.2s ease;
-            font-size: 14px;
-            white-space: nowrap;
-        }
-
-        .play-btn:hover { 
-            background: var(--accent-blue); 
-            color: var(--bg-main);
-            border-color: var(--accent-blue);
-            box-shadow: 0 0 12px rgba(88, 166, 255, 0.4);
-        }
-
-        /* Адаптив под мобилки */
-        @media (max-width: 500px) {
-            .game-item {
-                flex-direction: column;
-                align-items: flex-start;
-                gap: 16px;
-            }
-            .play-btn {
-                width: 100%;
-                text-align: center;
-                box-sizing: border-box;
-            }
-        }
+        body { font-family: monospace; background-color: #0d1117; color: #c9d1d9; padding: 30px; margin: 0; }
+        .container { max-width: 800px; margin: 0 auto; }
+        h1 { color: #58a6ff; border-bottom: 1px solid #21262d; padding-bottom: 10px; font-size: 28px; }
+        p.desc { color: #8b949e; font-size: 14px; line-height: 1.5; }
+        .game-list { margin-top: 30px; }
+        .game-item { display: flex; justify-content: space-between; align-items: center; padding: 15px; border-bottom: 1px solid #21262d; transition: 0.2s; }
+        .game-item:hover { background: #161b22; }
+        .game-info { display: flex; flex-direction: column; }
+        .game-name { font-weight: bold; color: #ff7b72; font-size: 16px; }
+        .game-meta { font-size: 12px; color: #8b949e; margin-top: 4px; }
+        .play-btn { color: #58a6ff; text-decoration: none; font-weight: bold; border: 1px solid #30363d; padding: 6px 12px; border-radius: 6px; background: #21262d; }
+        .play-btn:hover { background: #30363d; border-color: #8b949e; }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <header>
-        <h1>MS Games</h1>
-        <p class="desc">
-            // More Games soon!<br>
-            // Status: supported
-        </p>
-    </header>
+    <h1>Games</h1>
+    <p class="desc">// More Games soon!<br>
+    // Status: supported</p>
 
-    <main class="game-list">
-        
-        <!-- Игра 1: Animal Fight -->
+    <div class="game-list">
+
         <div class="game-item">
             <div class="game-info">
                 <span class="game-name">⚔️ Animal Fight</span>
                 <span class="game-meta">File size: ~22 KB | Type: Auto Battler</span>
             </div>
-            <a href="Animal_Fight.html" class="play-btn" target="_blank">Test()</a>
+            <a href="Animal_Fight.html" class="play-btn" target="_blank">Play</a>
         </div>
 
-        <!-- Игра 2: Balls -->
         <div class="game-item">
             <div class="game-info">
                 <span class="game-name">🔮 Balls</span>
                 <span class="game-meta">File size: ~9 KB | Type: Sandbox</span>
             </div>
-            <a href="Balls.html" class="play-btn" target="_blank">Test()</a>
+            <a href="Balls.html" class="play-btn" target="_blank">Play</a>
         </div>
 
-    </main>
+        <div class="game-item">
+            <div class="game-info">
+                <span class="game-name">Click Test</span>
+                <span class="game-meta">File size: ~8 KB | Type: Test</span>
+            </div>
+            <a href="Balls.html" class="play-btn" target="_blank">Play</a>
+        </div>
+        
+    </div>
 </div>
 
 </body>
