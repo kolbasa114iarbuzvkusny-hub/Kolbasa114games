@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reaction & CPS Test</title>
+    <style>
+        body { font-family: sans-serif; background: #121212; color: white; display: flex; flex-direction: column; align-items: center; margin: 0; padding: 20px; }
+        .container { width: 100%; max-width: 600px; text-align: center; }
+        .tabs { display: flex; gap: 10px; margin-bottom: 20px; }
+        button { padding: 10px 20px; cursor: pointer; border: none; border-radius: 5px; font-weight: bold; }
+        .tab-btn { background: #333; color: #ccc; flex: 1; }
+        .tab-btn.active { background: #007bff; color: white; }
+        
+        /* CPS Style */
+        #cps-area, #reaction-area { width: 100%; height: 300px; display: flex; flex-direction: column; justify-content: center; align-items: center; border-radius: 15px; cursor: pointer; user-select: none; transition: background 0.1s; }
+        #cps-area { background: #1e1e1e; border: 2px dashed #444; }
+        #cps-area:active { background: #2a2a2a; }
+        
+        /* Reaction Style */
+        #reaction-area { background: #ce2635; font-size: 24px; font-weight: bold; }
+        .waiting { background: #ce2635 !important; }
+        .ready { background: #4bdb66 !important; color: #000 !important; }
+        .too-early { background: #f1c40f !important; color: #000 !important; }
+
+        .time-selector { margin-bottom: 15px; display: flex; justify-content: center; gap: 5px; }
+        .res-text { font-size: 1.2rem; margin-top: 15px; min-height: 1.5em; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="tabs">
+        <button class="tab-btn active" onclick="switchTab('cps')">CPS Test</button>
+        <button class="tab-btn" onclick="switchTab('reaction')">Reaction Time</button>
+    </div>
+
+    <div id="cps-section">
+        <div class="time-selector">
+            <button onclick="setCpsTime(1)">1s</button>
+            <button onclick="setCpsTime(3)">3s</button>
+            <button onclick="setCpsTime(5)">5s</button>
+            <button onclick="setCpsTime(10)">10s</button>
+            <button onclick="setCpsTime(30)">30s</button>
+        </div>
+        <div id="cps-area" onmousedown="handleCpsClick()">
+            <h2 id="cps-title">Click to start!</h2>
+            <p>Selecred time: <span id="selected-time">5</span> sec.</p>
+        </div>
+        <p class="res-text" id="cps-result"></p>
+    </div>
+
+    <div id="reaction-section" style="display: none;">
+        <div id="reaction-area" onmousedown="handleReactionClick()" class="waiting">
+            Press when it turns GREEN.
+        </div>
+        <p class="res-text" id="reaction-result">Medium result (0 attempts): - </p>
+        <button onclick="resetReaction()" style="background: #444; color: white;">Stat reset</button>
+    </div>
+</div>
+
+<script>
+    function switchTab(type) {
+        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+        event.target.classList.add('active');
+        document.getElementById('cps-section').style.display = type === 'cps' ? 'block' : 'none';
+        document.getElementById('reaction-section').style.display = type === 'reaction' ? 'block' : 'none';
+    }
+
+    let cpsClicks = 0;
+    let cpsStartTime = 0;
+    let cpsLimit = 5;
+    let isCpsRunning = false;
+    let cpsTimer;
+
+    function setCpsTime(sec) {
+        if (isCpsRunning) return;
+        cpsLimit = sec;
+        document.getElementById('selected-time').innerText = sec;
+        resetCps();
+    }
+
+    function resetCps() {
+        cpsClicks = 0;
+        isCpsRunning = false;
+        document.getElementById('cps-title').innerText = "Click here!";
+        document.getElementById('cps-result').innerText = "";
+        clearTimeout(cpsTimer);
+    }
+
+    function handleCpsClick() {
+        if (!isCpsRunning) {
+            isCpsRunning = true;
+            cpsClicks = 1;
+            cpsStartTime = performance.now();
+            document.getElementById('cps-title').innerText = "CLICK!";
+            cpsTimer = setTimeout(endCps, cpsLimit * 1000);
+        } else {
+            cpsClicks++;
+        }
+    }
+
+    function endCps() {
+        isCpsRunning = false;
+        const cps = (cpsClicks / cpsLimit).toFixed(2);
+        document.getElementById('cps-title').innerText = "Finish!";
+        document.getElementById('cps-result').innerText = `Score: ${cpsClicks} taps for ${cpsLimit}s (${cps} CPS)`;
+    }
+
+    let reactionState = 'waiting'; // waiting, ready, result
+    let reactionStartTime = 0;
+    let reactionTimeout;
+    let reactionHistory = [];
+
+    const reactArea = document.getElementById('reaction-area');
+
+    function handleReactionClick() {
+        if (reactionState === 'waiting') {
+            reactArea.innerText = "Wait...";
+            reactArea.className = "waiting";
+            reactionState = 'active';
+            const delay = Math.random() * 3000 + 2000;
+            reactionTimeout = setTimeout(() => {
+                reactionState = 'ready';
+                reactArea.className = "ready";
+                reactArea.innerText = "CLICK!";
+                reactionStartTime = performance.now();
+            }, delay);
+        } 
+        else if (reactionState === 'active') {
+            clearTimeout(reactionTimeout);
+            reactArea.className = "too-early";
+            reactArea.innerText = "too early! click to restart";
+            reactionState = 'waiting';
+        } 
+        else if (reactionState === 'ready') {
+            const diff = Math.round(performance.now() - reactionStartTime);
+            reactionHistory.push(diff);
+            const avg = Math.round(reactionHistory.reduce((a, b) => a + b) / reactionHistory.length);
+            reactArea.className = "waiting";
+            reactArea.innerText = `${diff} ms! (click to restart)`;
+            document.getElementById('reaction-result').innerText = `medium result (${reactionHistory.length} attempts): ${avg} ms`;
+            reactionState = 'waiting';
+        }
+    }
+
+    function resetReaction() {
+        reactionHistory = [];
+        document.getElementById('reaction-result').innerText = "Medium result (0 attempts): -";
+        reactArea.innerText = "Press when it turns GREEN.";
+        reactArea.className = "waiting";
+        reactionState = 'waiting';
+        clearTimeout(reactionTimeout);
+    }
+</script>
+</body>
+</html>
